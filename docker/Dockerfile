@@ -7,12 +7,15 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
 RUN apt update 
-RUN apt install -y wget apt-transport-https curl
+RUN apt install -y wget apt-transport-https curl ca-certificates
 RUN apt install -y language-pack-en
 RUN update-locale LANG=en_US.UTF-8
 RUN apt install -y --no-install-recommends apt-utils
 RUN apt install -y wget software-properties-common
 RUN apt install -y mlocate strace iputils-ping telnet tcpdump vim htop
+
+# -- Anticipate docker user and group creation (for ubuntu 22 docker-in-docker compatibility)
+RUN groupadd -o -g 999 docker
 
 # -- Install yq 
 # RUN LC_CTYPE=C.UTF-8 add-apt-repository ppa:rmescandon/yq
@@ -39,8 +42,7 @@ RUN systemctl disable systemd-update-utmp.service
 #    Add a number there to force update files
 ADD assets/nocache /root
 RUN mkdir /opt/docker-bbb/
-RUN wget https://ubuntu.bigbluebutton.org/bbb-install-2.5.sh -O- | sed 's|https://\$PACKAGE_REPOSITORY|http://\$PACKAGE_REPOSITORY|g' > /opt/docker-bbb/bbb-install.sh
-# RUN wget https://ubuntu.bigbluebutton.org/bbb-install-25.sh -O- | sed 's|https://\$PACKAGE_REPOSITORY|http://\$PACKAGE_REPOSITORY|g' > /opt/docker-bbb/bbb-install.sh
+RUN wget https://raw.githubusercontent.com/bigbluebutton/bbb-install/v2.7.x-release/bbb-install.sh -O- | sed 's|https://\$PACKAGE_REPOSITORY|http://\$PACKAGE_REPOSITORY|g' > /opt/docker-bbb/bbb-install.sh
 
 RUN chmod 755 /opt/docker-bbb/bbb-install.sh
 ADD ./assets/setup.sh /opt/docker-bbb/setup.sh
@@ -59,4 +61,3 @@ ADD ./assets/haveged.service /etc/systemd/system/default.target.wants/haveged.se
 RUN printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d 
 
 ENTRYPOINT ["/bin/systemd", "--system", "--unit=multi-user.target"]
-
